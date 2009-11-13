@@ -65,7 +65,9 @@
 
 
 ;; is-contained? : hash hash -> boolean
-;; checks if a hash contains all the keys of another
+;; checks if a hash contains all the keys of another 
+;; I've used for here to get to know it. Frankly, I prefer
+;; recursion so TODO: refactor this to use normal recursion.
 (define (is-contained? given-word origin-word)
   (let ([contains? true])
     (begin (for ((key (in-hash-keys given-word))
@@ -196,57 +198,122 @@
               '("ghost" "go" "gosh" "hog"))
 
 
-;; generate-anagrams : hash (listof string) -> (listof string) or false
+(check-expect (build-lexicon (build-lexical-analysis "st")
+                             '("g" "ho" "st" "host"))
+              '("st"))
+
+;; PRECISO DE
+;; UMA FUNCAO generate-all-anagrams 
+;; GERAR UM NOVO LEXICOM PARA CADA PIRA
+
+;; generate-all-anagrams : hash (listof string) -> (listof (listof string))
 ;; generates all the anagrams for a given word that are 
 ;; found in the lexicon. Returns false if no 
 ;; anagram is possible
-(define (generate-anagram given-word dictionary)
-  (local [(define (generate-anagram-acc word lexicon anagrams)
+(define (generate-all-anagrams given-word dictionary)
+  (local [(define (generate-anagram word lexicon anagram-piece)
             (cond
-              [(zero? (hash-count word)) anagrams]
-              [(empty? lexicon) false]
+              [(zero? (hash-count word)) anagram-piece]
+              [(empty? lexicon) empty] 
               [else
-               (let ([lexicon-entry-analysis
-                      (build-lexical-analysis (first lexicon))])
+               (let* ([possible-anagram-increment
+                       (build-lexical-analysis 
+                        (foldr string-append
+                               ""
+                               (append anagram-piece
+                                       (list (first lexicon)))))]
+                      [word-rest (subtract given-word
+                                           possible-anagram-increment)])
                  (cond
-                   [(false? $expr$ ---) $expr$ ---] $expr$ ---)
-                 (generate-acc (subtract word lexicon-entry-analysis)
-                               (rest lexicon)
-                               (cons (first lexicon)
-                                     anagrams)))]))]
-    (generate-acc given-word
-                  (build-lexicon given-word dictionary)
-                  empty)))
+                   [(false? word-rest) 
+                    (generate-anagram word
+                                      (rest lexicon)
+                                      anagram-piece)]
+                   [else
+                    (generate-anagram word-rest
+                                      (rest lexicon)
+                                      (append anagram-piece
+                                              (list (first lexicon))))]))]))
+          
+          (define (accumulate-anagrams lexicon anagram-accumulator)
+            (cond
+              [(empty? lexicon) anagram-accumulator]
+              [else
+               (let ([anagram (generate-anagram given-word
+                                                lexicon
+                                                empty)])
+                 (cond
+                   [(empty? anagram)
+                    (accumulate-anagrams (rest lexicon)
+                                         anagram-accumulator)]
+                   [else ;; found an anagram, but there could be others with this letter
+                    (accumulate-anagrams (rest lexicon)
+                                         (cons anagram
+                                               anagram-accumulator))]))]))]
+    
+    (accumulate-anagrams (build-lexicon given-word dictionary)
+                         empty)))
 
-(define (generate-anagram/list $expr$ ---) $expr$ ---)
 
-(check-expect (generate-anagrams (build-lexical-analysis "web")
-                                 SMALL-DICTIONARY)
-              '("web"))
 
-(check-expect (generate-anagrams (build-lexical-analysis "bow")
-                                 SMALL-DICTIONARY)
-              '("bow"))
+;(check-expect (generate-all-anagrams (build-lexical-analysis "ghost")
+;                                     '("g" "ho" "host" "st"))
+;              '('("g" "ho" "st")
+;                '("g" "host")))
 
-(check-expect (generate-anagrams (build-lexical-analysis "")
-                                 SMALL-DICTIONARY)
-              '())
+;(check-expect (generate-all-anagrams (build-lexical-analysis "ghost")
+;                                     '("g" "ho" "st" "host"))
+;              '(("g" "ho" "st")
+;                ("g" "host")))
 
-;(check-expect (generate-anagrams (build-lexical-analysis "swore")
-;                                 SMALL-DICTIONARY)
-;              '("sew owe swore worse"))
+;(check-expect (generate-all-anagrams (build-lexical-analysis "web")
+;                                     SMALL-DICTIONARY)
+;              '("web"))
+;
+;(check-expect (generate-all-anagrams (build-lexical-analysis "bow")
+;                                     SMALL-DICTIONARY)
+;              '("bow"))
+;
+;(check-expect (generate-all-anagrams (build-lexical-analysis "")
+;                                     SMALL-DICTIONARY)
+;              '())
 
-(check-expect (generate-anagrams (build-lexical-analysis "swore")
-                                SMALL-DICTIONARY)
-              '("worse" "swore"))
 
-;(check-expect (generate-anagrams (build-lexical-analysis "swore web")
-;                                 SMALL-DICTIONARY)
+
+;(check-expect (generate-all-anagrams (build-lexical-analysis "swore")
+;                                     SMALL-DICTIONARY)
+;              '("swore" "worse"))
+;
+;(check-expect (generate-all-anagrams (build-lexical-analysis "swore")
+;                                     SMALL-DICTIONARY)
+;              '("worse" "swore"))
+;
+;(check-expect (generate-all-anagrams (build-lexical-analysis "swore web")
+;                                     SMALL-DICTIONARY)
 ;              '("swore web"
 ;                "web worse"))
 
 
 
+;; rotate-left : (listof X) number -> (listof X)
+;; rotates N times to the left
+(define (rotate-left lox0 (times0 1))
+  (local [(define (rotate lox times)
+            (cond
+              [(or (<= times 0)
+                   (empty? (rest lox))) lox]
+              [(empty? lox) empty]
+              [else
+               (rotate (append (rest lox)
+                               (list (first lox)))
+                       (sub1 times))]))]
+    (rotate lox0 times0)))
+
+(check-expect (rotate-left '(1 2 3 4))
+              '(2 3 4 1))
+
+(check-expect (rotate-left '(1 2 3 4) 2)
+              '(3 4 1 2))
 
 
 (test)
