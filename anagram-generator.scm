@@ -1,22 +1,36 @@
 #lang scheme
 
 (require test-engine/scheme-tests)
+
 ;(require scheme/system)
 
+;; read-all : input-port -> (listof string)
+;; just everything from the dictionary
+(define (read-all the-dictionary)
+  (local [(define (read-accumulative accumulator)
+            (let ([readed (read the-dictionary)])
+              (cond
+                [(empty? the-dictionary) accumulator]
+                [(eof-object? readed) accumulator]
+                [else (read-accumulative
+                       (append accumulator
+                               (list (symbol->string readed))))])))]
+    (read-accumulative empty)))
+
+
+(define MEDIUM-DICTIONARY (read-all (open-input-file "dictionaries/medium.txt")))
 
 ;; something to test with
-(define SMALL-DICTIONARY '("abash" "aura" "bar" "barb" "bee" "beg"
-                                   "blush" "bog" "bogus" "bough" "bow"
-                                   "brew" "brow" "brush" "bug"
-                                   "bugs" "bus" "but" "egg" "ego"
-                                   "erg" "ghost" "go" "goes" "gorge"
-                                   "gosh" "grew" "grow" "grub" "gush"
-                                   "he" "her" "here" "hew" "hog" "hose"
-                                   "how" "hub" "hug" "owe" "rub" "sew"
-                                   "she" "shrub" "shrug" "sub" "surge"
-                                   "swore" "web" "wee" "were" "whore"
-                                   "whose" "woe" "wore" "worse"))
-
+;; replace with (read-all (open-input-file some-file))
+(define DEFAULT-DICTIONARY (list "abash" "aura" "bar" "barb" "bee" "beg"
+                                 "blush" "bog" "bogus" "bough" "bow" "brew"
+                                 "brow" "brush" "bug" "bugs" "bus" "but" "egg"
+                                 "ego" "erg" "ghost" "go" "goes" "gorge"
+                                 "gosh" "grew" "grow" "grub" "gush" "he"
+                                 "her" "here" "hew" "hog" "hose" "how" "hub"
+                                 "hug" "owe" "rub" "sew" "she" "shrub"
+                                 "shrug" "sub" "surge" "swore" "web" "wee"
+                                 "were" "whore" "whose" "woe" "wore" "worse"))
 
 
 ;; build-lexical-analysis : string -> hash
@@ -162,20 +176,6 @@
               (build-lexical-analysis ""))
 
 
-;; read-all : input-port -> (listof string)
-;; just everything from the dictionary
-(define (read-all the-dictionary)
-  (local [(define (read-accumulative accumulator)
-            (let ([readed (read the-dictionary)])
-              (cond
-                [(empty? the-dictionary) accumulator]
-                [(eof-object? readed) accumulator]
-                [else (read-accumulative
-                       (append accumulator
-                               (list (symbol->string readed))))])))]
-    (read-accumulative empty)))
-
-
 ;; build-lexicon : hash (listof string) -> (listof string)
 ;; clean a dictionary to contain only those words that are 
 ;; subsets of the original word
@@ -197,26 +197,21 @@
                                        lexicon)]))]))]
     (build-lexicon-acc dictionary0 empty)))
 
-
-(check-expect (build-lexicon (build-lexical-analysis "swore web")
-                             SMALL-DICTIONARY)
-              '("bee" "bow" "brew" "brow"
-                      "owe" "sew" "swore" "web"
-                      "wee" "were" "woe" "wore" "worse"))
-
-(check-expect (build-lexicon (build-lexical-analysis "ghost")
-                             SMALL-DICTIONARY)
-              '("ghost" "go" "gosh" "hog"))
+;
+;(check-expect (build-lexicon (build-lexical-analysis "swore web")
+;                             DEFAULT-DICTIONARY)
+;              '("bee" "bow" "brew" "brow"
+;                      "owe" "sew" "swore" "web"
+;                      "wee" "were" "woe" "wore" "worse"))
+;
+;(check-expect (build-lexicon (build-lexical-analysis "ghost")
+;                             DEFAULT-DICTIONARY)
+;              '("ghost" "go" "gosh" "hog"))
 
 
 (check-expect (build-lexicon (build-lexical-analysis "st")
                              '("g" "ho" "st" "host"))
               '("st"))
-
-
-;; PRECISO DE
-;; UMA FUNCAO generate-all-anagrams 
-;; GERAR UM NOVO LEXICOM PARA CADA PIRA
 
 
 ;; analyse-list : (listof string) -> hash
@@ -227,33 +222,17 @@
           ""
           los)))
 
-;; hash-empty? : hash -> boolean
-;; checks if a hash is empty. For more readable code.
-(define (hash-empty? a-hash)
-  (false? (hash-iterate-first a-hash)))
-
 ;; generate-all-anagrams : string (listof string) -> (listof (listof string)) or false
 ;; generates all the anagrams for a given word that are 
 ;; found in the lexicon. Returns false if no 
 ;; anagram is possible
 (define (generate-all-anagrams given-word dictionary)
-  (local [;; check-for-anagram : (listof string) -> hash or false
-          ;; this serves to see if the last word on a possible anagram
-          ;; is itself a valid anagram. If it is use it for subtraction,
-          ;; else use the whole possible diagram list. It can return false if
-          ;; the subtraction fails
-;          (define (check-for-anagram possible-anagram)
-;            (let* ([initial-word
-;                    (build-lexical-analysis given-word)]
-;                   [result-for-last-word
-;                    (subtract initial-word
-;                              (build-lexical-analysis (last possible-anagram)))])
-;              (cond
-;                [(hash-empty? result-for-last-word)
-;                 result-for-last-word]
-;                [else
-;                 (subtract initial-word
-;                           (analyse-list possible-anagram))])))
+  (local [;; hash-empty? : hash or boolean -> boolean
+          ;; checks if a hash is empty. For more readable code.
+          (define (hash-empty? a-hash)
+            (cond
+              [(false? a-hash) false]
+              [else (false? (hash-iterate-first a-hash))]))
           
           ;; find-anagram (listof string) (listof string) -> (listof string) or false
           ;; discover if the the anagram accumulator matches the initial word, 
@@ -296,78 +275,55 @@
                     (find-anagrams (rest a-lexicon)
                                    anagram-acc)]
                    [else
-                    possible-anagram]))]))]
+                    (sort possible-anagram string<?)]))]))]
     
-    (filter-map (λ (dictionary-entry)
-                  (find-anagrams dictionary (list dictionary-entry)))
-                dictionary)))
+    (remove-duplicates
+     (filter-map (λ (dictionary-entry)
+                   (find-anagrams dictionary
+                                  (list dictionary-entry)))
+                 (build-lexicon (build-lexical-analysis given-word)
+                                dictionary)))))
 
 
 
-(generate-all-anagrams "ghost"
-                       '("tghos" "g" "ho" "host" "st"))
-
-;(check-expect (generate-all-anagrams "ghost"
-;                                     '("ghost" "g" "ho" "host" "st"))
-;              '(("ghost")
-;                ("g" "ho" "st")
-;                ("ho" "g" "st")
-;                ("host" "g")
-;                ("st" "g" "ho")))
-
-;(check-expect (generate-all-anagrams "web"
-;                                     (list "web"))
-;              '(("web")))
-
-;(check-expect (generate-all-anagrams "web"
-;                                     SMALL-DICTIONARY)
-;              '("web"))
-;
-;(check-expect (generate-all-anagrams (build-lexical-analysis "bow")
-;                                     SMALL-DICTIONARY)
-;              '("bow"))
-;
-;(check-expect (generate-all-anagrams (build-lexical-analysis "")
-;                                     SMALL-DICTIONARY)
-;              '())
+(check-expect (generate-all-anagrams "ghost"
+                                     '("ghost" "g" "ho" "host" "st"))
+              '(("ghost")
+                ("g" "ho" "st")
+                ("g" "host")))
 
 
 
-;(check-expect (generate-all-anagrams (build-lexical-analysis "swore")
-;                                     SMALL-DICTIONARY)
-;              '("swore" "worse"))
-;
-;(check-expect (generate-all-anagrams (build-lexical-analysis "swore")
-;                                     SMALL-DICTIONARY)
-;              '("worse" "swore"))
-;
-;(check-expect (generate-all-anagrams (build-lexical-analysis "swore web")
-;                                     SMALL-DICTIONARY)
-;              '("swore web"
-;                "web worse"))
+(check-expect (generate-all-anagrams "web"
+                                     DEFAULT-DICTIONARY)
+              '(("web")))
+
+
+(check-expect (generate-all-anagrams "bow"
+                                     DEFAULT-DICTIONARY)
+              '(("bow")))
+
+(check-expect (generate-all-anagrams ""
+                                     DEFAULT-DICTIONARY)
+              '())
 
 
 
-;; rotate-left : (listof X) number -> (listof X)
-;; rotates N times to the left
-;(define (rotate-left lox0 (times0 1))
-;  (local [(define (rotate lox times)
-;            (cond
-;              [(or (<= times 0)
-;                   (empty? (rest lox))) lox]
-;              [(empty? lox) empty]
-;              [else
-;               (rotate (append (rest lox)
-;                               (list (first lox)))
-;                       (sub1 times))]))]
-;    (rotate lox0 times0)))
-;
-;(check-expect (rotate-left '(1 2 3 4))
-;              '(2 3 4 1))
-;
-;(check-expect (rotate-left '(1 2 3 4) 2)
-;              '(3 4 1 2))
+(check-expect (generate-all-anagrams "swore"
+                                     DEFAULT-DICTIONARY)
+              '(("swore")
+                ("worse")))
 
+
+
+(check-expect (generate-all-anagrams "swore web"
+                                     DEFAULT-DICTIONARY)
+              '(("swore" "web")
+                ("web" "worse")))
+
+
+(generate-all-anagrams "bellani"
+                         MEDIUM-DICTIONARY)
 
 (test)
 
