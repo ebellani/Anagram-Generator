@@ -2,8 +2,6 @@
 
 (require test-engine/scheme-tests)
 
-;(require scheme/system)
-
 ;; read-all : input-port -> (listof string)
 ;; just everything from the dictionary
 (define (read-all the-dictionary)
@@ -18,10 +16,11 @@
     (read-accumulative empty)))
 
 
-(define MEDIUM-DICTIONARY (read-all (open-input-file "dictionaries/medium.txt")))
+;; (define MEDIUM-DICTIONARY (read-all (open-input-file "dictionaries/medium.txt")))
 
 ;; something to test with
-;; replace with (read-all (open-input-file some-file))
+;; replace with (read-all (open-input-file some-file)) 
+;; like the file above if you want to make some 'real' tests
 (define DEFAULT-DICTIONARY (list "abash" "aura" "bar" "barb" "bee" "beg"
                                  "blush" "bog" "bogus" "bough" "bow" "brew"
                                  "brow" "brush" "bug" "bugs" "bus" "but" "egg"
@@ -197,16 +196,16 @@
                                        lexicon)]))]))]
     (build-lexicon-acc dictionary0 empty)))
 
-;
-;(check-expect (build-lexicon (build-lexical-analysis "swore web")
-;                             DEFAULT-DICTIONARY)
-;              '("bee" "bow" "brew" "brow"
-;                      "owe" "sew" "swore" "web"
-;                      "wee" "were" "woe" "wore" "worse"))
-;
-;(check-expect (build-lexicon (build-lexical-analysis "ghost")
-;                             DEFAULT-DICTIONARY)
-;              '("ghost" "go" "gosh" "hog"))
+
+(check-expect (build-lexicon (build-lexical-analysis "swore web")
+                             DEFAULT-DICTIONARY)
+              '("bee" "bow" "brew" "brow"
+                      "owe" "sew" "swore" "web"
+                      "wee" "were" "woe" "wore" "worse"))
+
+(check-expect (build-lexicon (build-lexical-analysis "ghost")
+                             DEFAULT-DICTIONARY)
+              '("ghost" "go" "gosh" "hog"))
 
 
 (check-expect (build-lexicon (build-lexical-analysis "st")
@@ -222,9 +221,9 @@
           ""
           los)))
 
-;; generate-all-anagrams : string (listof string) -> (listof (listof string)) or false
+;; generate-all-anagrams : string (listof string) -> (listof (listof string))
 ;; generates all the anagrams for a given word that are 
-;; found in the lexicon. Returns false if no 
+;; found in the lexicon. Returns empty if no 
 ;; anagram is possible
 (define (generate-all-anagrams given-word dictionary)
   (local [;; hash-empty? : hash or boolean -> boolean
@@ -320,10 +319,6 @@
                                      DEFAULT-DICTIONARY)
               '(("swore" "web")
                 ("web" "worse")))
-
-
-(generate-all-anagrams "bellani"
-                         MEDIUM-DICTIONARY)
 
 (test)
 
